@@ -18,14 +18,12 @@
             color: ivory;
             text-shadow: 4px 4px 5px #9541AC;
         }
-
         #leaderboard {
             display: flex;
             flex-direction: column;
             margin: 0 5px;
             background: rgb(120 103 197 / 80%);
         }
-
         .leaderboard-header, .leaderboard-item {
             display: flex;
             justify-content: space-between;
@@ -34,26 +32,23 @@
         }
         .leaderboard-header {
             position: sticky;
-            top:0;
+            top: 0;
             background: #bb37fc;
-            font-weight:700;
+            font-weight: 700;
             font-size: 18px;
         }
-
-        .col-1 {
-            width:10%;
-        }
+        .col-1 { width: 10%; }
         .col-2 {
-            width:70%;
+            width: 70%;
             text-align: left;
             font-family: monospace;
         }
         .col-3 {
-            width:20%;
-            text-align:right;
+            width: 20%;
+            text-align: right;
         }
-
-        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+        .leaderboard-item .col-1,
+        .leaderboard-item .col-3 {
             font-size: 17px;
         }
         .leaderboard-item .col-2 {
@@ -62,18 +57,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .error {
             color: ivory;
             text-align: center;
-            padding:10px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
 <h1>YUM - склейка</h1>
 
-<!-- Time range selection fields -->
+<!-- Filter by date/time range -->
 <div id="filter-controls" style="margin: 20px; text-align: center;">
     <label>
         С:
@@ -102,23 +96,21 @@
     const WALLET_ID    = 'feed_yupiks.near';
     const SYMBOL       = 'YUM';
     const BATCH        = 200;
-    const MIN_INTERVAL = 5 * 60 * 1000;  // 5 minutes in ms.
+    const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
 
     let lastFetchTime = 0;
 
-    // Getting values from input fields and converting to milliseconds
     function getFilterRange() {
-        const sinceInput = document.getElementById('since-input').value;
-        const untilInput = document.getElementById('until-input').value;
+        const sinceStr = document.getElementById('since-input').value;
+        const untilStr = document.getElementById('until-input').value;
         return {
-            sinceStr: sinceInput,
-            untilStr: untilInput,
-            sinceMs: new Date(sinceInput).getTime(),
-            untilMs: new Date(untilInput).getTime()
+            sinceStr,
+            untilStr,
+            sinceMs: new Date(sinceStr).getTime(),
+            untilMs: new Date(untilStr).getTime()
         };
     }
 
-    // Downloading all translation batches
     async function fetchAll() {
         let all = [];
         for (let skip = 0; ; skip += BATCH) {
@@ -137,7 +129,6 @@
         return all;
     }
 
-    // Drawing table with time filtering
     async function renderBoard() {
         const now = Date.now();
         if (now - lastFetchTime < MIN_INTERVAL) return;
@@ -149,42 +140,59 @@
 
         try {
             let data = await fetchAll();
+            // Filtering by selected range
             data = data.filter(tx => {
                 const txMs = Number(tx.timestamp_nanosec) / 1e6;
                 return txMs >= sinceMs && txMs <= untilMs;
             });
 
-            const sums = data.reduce((acc, tx) => {
-                const raw = parseFloat(tx.amount);
-                const val = isNaN(raw) ? 0 : raw / 100000;
-                acc[tx.from] = (acc[tx.from] || 0) + val;
-                return acc;
-            }, {});
+            // Collection of statistics: amount and date of first shipment
+            const stats = {};
+            data.forEach(tx => {
+                const wallet = tx.from;
+                const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                const amount = parseFloat(tx.amount) / 100000 || 0;
 
-            const sorted = Object.entries(sums)
-                .map(([wallet, total]) => ({ wallet, total }))
-                .sort((a, b) => b.total - a.total);
+                if (!stats[wallet]) {
+                    stats[wallet] = { total: 0, firstMs: txMs };
+                }
+                stats[wallet].total += amount;
+                if (txMs < stats[wallet].firstMs) {
+                    stats[wallet].firstMs = txMs;
+                }
+            });
 
-            if (!sorted.length) {
-                container.innerHTML = `<div class="error">
-Нет переводов в период<br>
-${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
-</div>`;
+            // Convert to an array and sort by the first date (ascending)
+            const sorted = Object.entries(stats)
+                .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
+                .sort((a, b) => a.firstMs - b.firstMs);
+
+            // If there is no data - show message
+            if (sorted.length === 0) {
+                container.innerHTML = `
+                        <div class="error">
+                            Нет переводов в период<br>
+                            ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
+                        </div>`;
                 return;
             }
 
+            // Line rendering
             sorted.forEach((item, i) => {
+                const date = new Date(item.firstMs);
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
-    <div class="col-1">${i + 1}</div>
-    <div class="col-2">${item.wallet}</div>
-    <div class="col-3">
-      ${item.total.toLocaleString(undefined, {
+                        <div class="col-1">${i + 1}</div>
+                        <div class="col-2">
+                          ${item.wallet}
+                        </div>
+                        <div class="col-3">
+                          ${item.total.toLocaleString(undefined, {
                     minimumFractionDigits: 3,
                     maximumFractionDigits: 3
                 })}
-    </div>`;
+                        </div>`;
                 container.appendChild(row);
             });
         } catch (err) {
@@ -193,7 +201,6 @@ ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
         }
     }
 
-    // Event linking
     document.getElementById('apply-filter')
         .addEventListener('click', renderBoard);
     window.addEventListener('DOMContentLoaded', renderBoard);

@@ -151,7 +151,7 @@
             data.forEach(tx => {
                 const wallet = tx.from;
                 const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                const amount = parseFloat(tx.amount) / 100000 || 0;
+                const amount = parseFloat(tx.amount) / 1000 || 0;
 
                 if (!stats[wallet]) {
                     stats[wallet] = { total: 0, firstMs: txMs };

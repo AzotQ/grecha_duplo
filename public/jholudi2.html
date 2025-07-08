@@ -220,7 +220,7 @@
             let csv = '#,Wallet,Sum\n';
             csv += sorted
                 .map((item, idx) =>
-                    `${idx+1},${item.wallet},${item.total.toFixed(3)}`
+                    `${idx+1},${item.wallet},${item.total.toFixed(0)}`
                 )
                 .join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

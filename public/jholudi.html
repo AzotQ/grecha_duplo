@@ -79,7 +79,23 @@
     </style>
 </head>
 <body>
-<h1>JHOLUDI - 10/07</h1>
+<h1>JHOLUDI на darai_fane.near</h1>
+
+<div id="controls" style="text-align:center; margin: 20px 0;">
+    <label>
+        С:
+        <input type="datetime-local" id="sinceDate"
+               value="2025-07-04T12:20">
+    </label>
+    &nbsp;&nbsp;
+    <label>
+        По:
+        <input type="datetime-local" id="untilDate"
+               value="2025-07-10T20:00">
+    </label>
+    &nbsp;&nbsp;
+    <button id="applyBtn">Применить</button>
+</div>
 
 <div id="leaderboard">
     <div class="leaderboard-header">
@@ -98,15 +114,19 @@
     const COINS    = [
         { symbol: 'JHOLUDI', coeff: 1.0 },
     ];
-    const SINCE_DATETIME = '2025-07-04T12:20';
-    const UNTIL_DATETIME = '2025-07-10T20:00';
-    const SINCE_MS     = new Date(SINCE_DATETIME).getTime();
-    const UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
     const BATCH = 200;
-    const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
+    const MIN_INTERVAL = 0.05 * 60 * 1000;  // 3sec
 
     let lastFetchTime = 0;
     let lastSorted = [];
+
+    function getTimeRange() {
+        const sinceDate = document.getElementById('sinceDate').value;
+        const untilDate = document.getElementById('untilDate').value;
+        const sinceMs  = new Date(sinceDate).getTime();
+        const untilMs  = new Date(untilDate).getTime();
+        return { sinceDate, untilDate, sinceMs, untilMs };
+    }
 
     // Takes all the translation stacks by symbol.
     async function fetchAllFor(symbol) {
@@ -132,18 +152,19 @@
     async function fetchData() {
         const now = Date.now();
         if (now - lastFetchTime < MIN_INTERVAL) {
-            // If it is too frequent, we immediately revert to the past data
             return lastSorted;
         }
         lastFetchTime = now;
 
+        const { sinceDate, untilDate, sinceMs, untilMs } = getTimeRange();
         const globalSums = {};
+
         for (const { symbol, coeff } of COINS) {
             const data = await fetchAllFor(symbol);
             data
                 .filter(tx => {
                     const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                    return txMs >= SINCE_MS && txMs <= UNTIL_MS;
+                    return txMs >= sinceMs && txMs <= untilMs;
                 })
                 .forEach(tx => {
                     const val = parseFloat(tx.amount) * coeff;
@@ -196,17 +217,17 @@
     async function downloadCsv() {
         try {
             const sorted = lastSorted.length ? lastSorted : await fetchData();
-            let csv = '№,Кошелек,Сумма\n';
+            let csv = '#,Wallet,Sum\n';
             csv += sorted
                 .map((item, idx) =>
-                    `${idx+1},${item.wallet},${item.total.toFixed(3)}`
+                    `${idx+1},${item.wallet},${item.total.toFixed(0)}`
                 )
                 .join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'leaderboard.csv';
+            a.download = 'JHOLUDI_to_darai_fane.near.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -221,7 +242,13 @@
         .getElementById('downloadCsv')
         .addEventListener('click', downloadCsv);
 
-    window.addEventListener('DOMContentLoaded', renderBoard);
+    document.getElementById('applyBtn')
+        .addEventListener('click', renderBoard);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        // Initial rendering
+        renderBoard();
+    });
 </script>
 </body>
 </html>

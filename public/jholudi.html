@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>JHOLUDI</title>
+    <title>YUM</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
@@ -18,22 +18,12 @@
             color: ivory;
             text-shadow: 4px 4px 5px #9541AC;
         }
-
-        #downloadCsv {
-            display: block;
-            margin: 20px auto;
-            padding: 8px 16px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
         #leaderboard {
             display: flex;
             flex-direction: column;
             margin: 0 5px;
             background: rgb(120 103 197 / 80%);
         }
-
         .leaderboard-header, .leaderboard-item {
             display: flex;
             justify-content: space-between;
@@ -42,26 +32,23 @@
         }
         .leaderboard-header {
             position: sticky;
-            top:0;
+            top: 0;
             background: #bb37fc;
-            font-weight:700;
+            font-weight: 700;
             font-size: 18px;
         }
-
-        .col-1 {
-            width:10%;
-        }
+        .col-1 { width: 10%; }
         .col-2 {
-            width:70%;
+            width: 70%;
             text-align: left;
             font-family: monospace;
         }
         .col-3 {
-            width:20%;
-            text-align:right;
+            width: 20%;
+            text-align: right;
         }
-
-        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+        .leaderboard-item .col-1,
+        .leaderboard-item .col-3 {
             font-size: 17px;
         }
         .leaderboard-item .col-2 {
@@ -70,16 +57,30 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .error {
             color: ivory;
             text-align: center;
-            padding:10px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
-<h1>JHOLUDI - 26/06</h1>
+<h1>YUM - склейка</h1>
+
+<!-- Filter by date/time range -->
+<div id="filter-controls" style="margin: 20px; text-align: center;">
+    <label>
+        С:
+        <input type="datetime-local" id="since-input" value="2025-06-20T22:37" />
+    </label>
+    &nbsp;
+    <label>
+        По:
+        <input type="datetime-local" id="until-input" value="2025-06-26T16:00" />
+    </label>
+    &nbsp;
+    <button id="apply-filter">Применить</button>
+</div>
 
 <div id="leaderboard">
     <div class="leaderboard-header">
@@ -88,34 +89,34 @@
         <div class="col-3">Сумма</div>
     </div>
     <div id="items"></div>
-
-    <button id="downloadCsv">Скачать CSV</button>
 </div>
 
 <script>
-    const API_PATH = '/api/grecha';
-    const WALLET_ID = 'darai_fane.near';
-    const COINS    = [
-        { symbol: 'JHOLUDI', coeff: 1.0 },
-    ];
-    const SINCE_DATETIME = '2025-06-20T22:37';
-    const UNTIL_DATETIME = '2025-06-26T16:00';
-    const SINCE_MS     = new Date(SINCE_DATETIME).getTime();
-    const UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
-    const BATCH = 200;
+    const API_PATH     = '/api/grecha';
+    const WALLET_ID    = 'darai_fane.near';
+    const SYMBOL       = 'JHOLUDI';
+    const BATCH        = 200;
     const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
 
     let lastFetchTime = 0;
-    let lastSorted = [];
 
-    // Takes all the translation stacks by symbol.
-    async function fetchAllFor(symbol) {
-        const all = [];
+    function getFilterRange() {
+        const sinceStr = document.getElementById('since-input').value;
+        const untilStr = document.getElementById('until-input').value;
+        return {
+            sinceStr,
+            untilStr,
+            sinceMs: new Date(sinceStr).getTime(),
+            untilMs: new Date(untilStr).getTime()
+        };
+    }
+
+    async function fetchAll() {
+        let all = [];
         for (let skip = 0; ; skip += BATCH) {
             const url = `${API_PATH}`
                 + `?wallet_id=${encodeURIComponent(WALLET_ID)}`
-                + `&symbol=${encodeURIComponent(symbol)}`
-                + `&direction=in`
+                + `&symbol=${encodeURIComponent(SYMBOL)}`
                 + `&limit=${BATCH}`
                 + `&skip=${skip}`;
             const resp = await fetch(url);
@@ -128,62 +129,70 @@
         return all;
     }
 
-    // Collects, filters, groups and returns a sorted array {wallet, total}
-    async function fetchData() {
+    async function renderBoard() {
         const now = Date.now();
-        if (now - lastFetchTime < MIN_INTERVAL) {
-            // If it is too frequent, we immediately revert to the past data
-            return lastSorted;
-        }
+        if (now - lastFetchTime < MIN_INTERVAL) return;
         lastFetchTime = now;
 
-        const globalSums = {};
-        for (const { symbol, coeff } of COINS) {
-            const data = await fetchAllFor(symbol);
-            data
-                .filter(tx => {
-                    const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                    return txMs >= SINCE_MS && txMs <= UNTIL_MS;
-                })
-                .forEach(tx => {
-                    const val = parseFloat(tx.amount) * coeff;
-                    globalSums[tx.from] = (globalSums[tx.from] || 0) + val;
-                });
-        }
-
-        const sorted = Object.entries(globalSums)
-            .map(([wallet, total]) => ({ wallet, total }))
-            .sort((a, b) => b.total - a.total);
-
-        lastSorted = sorted;
-        return sorted;
-    }
-
-    // Renders the results
-    async function renderBoard() {
+        const { sinceStr, untilStr, sinceMs, untilMs } = getFilterRange();
         const container = document.getElementById('items');
         container.innerHTML = '';
+
         try {
-            const sorted = await fetchData();
-            if (!sorted.length) {
-                container.innerHTML = `<div class="error">
-            Нет переводов в период<br>
-            ${SINCE_DATETIME.replace('T',' ')} — ${UNTIL_DATETIME.replace('T',' ')}
-          </div>`;
+            let data = await fetchAll();
+            // Filtering by selected range
+            data = data.filter(tx => {
+                const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                return txMs >= sinceMs && txMs <= untilMs;
+            });
+
+            // Collection of statistics: amount and date of first shipment
+            const stats = {};
+            data.forEach(tx => {
+                const wallet = tx.from;
+                const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                const amount = parseFloat(tx.amount) / 100000 || 0;
+
+                if (!stats[wallet]) {
+                    stats[wallet] = { total: 0, firstMs: txMs };
+                }
+                stats[wallet].total += amount;
+                if (txMs < stats[wallet].firstMs) {
+                    stats[wallet].firstMs = txMs;
+                }
+            });
+
+            // Convert to an array and sort by the first date (ascending)
+            const sorted = Object.entries(stats)
+                .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
+                .sort((a, b) => a.firstMs - b.firstMs);
+
+            // If there is no data - show message
+            if (sorted.length === 0) {
+                container.innerHTML = `
+                        <div class="error">
+                            Нет переводов в период<br>
+                            ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
+                        </div>`;
                 return;
             }
+
+            // Line rendering
             sorted.forEach((item, i) => {
+                const date = new Date(item.firstMs);
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
-            <div class="col-1">${i+1}</div>
-            <div class="col-2">${item.wallet}</div>
-            <div class="col-3">
-              ${item.total.toLocaleString(undefined,{
-                    minimumFractionDigits:0,
-                    maximumFractionDigits:0
+                        <div class="col-1">${i + 1}</div>
+                        <div class="col-2">
+                          ${item.wallet}
+                        </div>
+                        <div class="col-3">
+                          ${item.total.toLocaleString(undefined, {
+                    minimumFractionDigits: 3,
+                    maximumFractionDigits: 3
                 })}
-            </div>`;
+                        </div>`;
                 container.appendChild(row);
             });
         } catch (err) {
@@ -192,35 +201,8 @@
         }
     }
 
-    // Generates a CSV and initiates its download
-    async function downloadCsv() {
-        try {
-            const sorted = lastSorted.length ? lastSorted : await fetchData();
-            let csv = '№,Кошелек,Сумма\n';
-            csv += sorted
-                .map((item, idx) =>
-                    `${idx+1},${item.wallet},${item.total.toFixed(3)}`
-                )
-                .join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'leaderboard.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            alert('Ошибка при создании CSV: ' + err.message);
-            console.error(err);
-        }
-    }
-
-    document
-        .getElementById('downloadCsv')
-        .addEventListener('click', downloadCsv);
-
+    document.getElementById('apply-filter')
+        .addEventListener('click', renderBoard);
     window.addEventListener('DOMContentLoaded', renderBoard);
 </script>
 </body>

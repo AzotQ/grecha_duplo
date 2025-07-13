@@ -65,18 +65,18 @@
     </style>
 </head>
 <body>
-<h1>YUM - склейка</h1>
+<h1>YUM на feed_yupiks.near</h1>
 
 <!-- Filter by date/time range -->
 <div id="filter-controls" style="margin: 20px; text-align: center;">
     <label>
         С:
-        <input type="datetime-local" id="since-input" value="2025-06-30T19:50" />
+        <input type="datetime-local" id="since-input" />
     </label>
     &nbsp;
     <label>
         По:
-        <input type="datetime-local" id="until-input" value="2025-07-02T23:59" />
+        <input type="datetime-local" id="until-input" />
     </label>
     &nbsp;
     <button id="apply-filter">Обновить</button>
@@ -96,9 +96,26 @@
     const WALLET_ID    = 'feed_yupiks.near';
     const SYMBOL       = 'YUM';
     const BATCH        = 200;
-    const MIN_INTERVAL = 0.03 * 60 * 1000;  // 2 sec
+    const MIN_INTERVAL = 0.03 * 60 * 1000;  // 2 сек
 
     let lastFetchTime = 0;
+
+    // Format with leading zero
+    function pad(value) {
+        return value.toString().padStart(2, '0');
+    }
+
+    // Set default values: current day from 00:00 to 23:59
+    function setDefaultRange() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = pad(now.getMonth() + 1);
+        const day = pad(now.getDate());
+        const sinceDefault = `${year}-${month}-${day}T00:00`;
+        const untilDefault = `${year}-${month}-${day}T23:59`;
+        document.getElementById('since-input').value = sinceDefault;
+        document.getElementById('until-input').value = untilDefault;
+    }
 
     function getFilterRange() {
         const sinceStr = document.getElementById('since-input').value;
@@ -162,37 +179,31 @@
                 }
             });
 
-            // Convert to an array and sort by the first date (ascending)
+            // Sorting by date first sent (old first)
             const sorted = Object.entries(stats)
                 .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
                 .sort((a, b) => a.firstMs - b.firstMs);
 
-            // If there is no data - show message
             if (sorted.length === 0) {
                 container.innerHTML = `
-                        <div class="error">
-                            Нет переводов в период<br>
-                            ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
-                        </div>`;
+                    <div class="error">
+                        Нет переводов в период<br>
+                        ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
+                    </div>`;
                 return;
             }
 
-            // Line rendering
+            // String Renderer
             sorted.forEach((item, i) => {
-                const date = new Date(item.firstMs);
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
                         <div class="col-1">${i + 1}</div>
-                        <div class="col-2">
-                          ${item.wallet}
-                        </div>
-                        <div class="col-3">
-                          ${item.total.toLocaleString(undefined, {
+                        <div class="col-2">${item.wallet}</div>
+                        <div class="col-3">${item.total.toLocaleString(undefined, {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0
-                })}
-                        </div>`;
+                })}</div>`;
                 container.appendChild(row);
             });
         } catch (err) {
@@ -203,7 +214,10 @@
 
     document.getElementById('apply-filter')
         .addEventListener('click', renderBoard);
-    window.addEventListener('DOMContentLoaded', renderBoard);
+    window.addEventListener('DOMContentLoaded', () => {
+        setDefaultRange();
+        renderBoard();
+    });
 </script>
 </body>
 </html>

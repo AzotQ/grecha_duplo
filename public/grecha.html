@@ -18,50 +18,6 @@
             color: ivory;
             text-shadow: 4px 4px 5px #9541AC;
         }
-        #leaderboard {
-            display: flex;
-            flex-direction: column;
-            margin: 0 5px;
-            background: rgb(120 103 197 / 80%);
-        }
-        .leaderboard-header, .leaderboard-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 7px;
-            box-shadow: 0 1px 0 rgba(0,0,0,0.3);
-        }
-        .leaderboard-header {
-            position: sticky;
-            top: 0;
-            background: #bb37fc;
-            font-weight: 700;
-            font-size: 18px;
-        }
-        .col-1 { width: 10%; }
-        .col-2 {
-            width: 70%;
-            text-align: left;
-            font-family: monospace;
-        }
-        .col-3 {
-            width: 20%;
-            text-align: right;
-        }
-        .leaderboard-item .col-1,
-        .leaderboard-item .col-3 {
-            font-size: 17px;
-        }
-        .leaderboard-item .col-2 {
-            font-weight: 700;
-            font-size: 16px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .error {
-            color: ivory;
-            text-align: center;
-            padding: 10px;
-        }
 
         #downloadCsv {
             display: block;
@@ -70,24 +26,75 @@
             font-size: 16px;
             cursor: pointer;
         }
+
+        #leaderboard {
+            display: flex;
+            flex-direction: column;
+            margin: 0 5px;
+            background: rgb(120 103 197 / 80%);
+        }
+
+        .leaderboard-header, .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 7px;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+        }
+        .leaderboard-header {
+            position: sticky;
+            top:0;
+            background: #bb37fc;
+            font-weight:700;
+            font-size: 18px;
+        }
+
+        .col-1 {
+            width:10%;
+        }
+        .col-2 {
+            width:70%;
+            text-align: left;
+            font-family: monospace;
+        }
+        .col-3 {
+            width:20%;
+            text-align:right;
+        }
+
+        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+            font-size: 17px;
+        }
+        .leaderboard-item .col-2 {
+            font-weight: 700;
+            font-size: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .error {
+            color: ivory;
+            text-align: center;
+            padding:10px;
+        }
     </style>
 </head>
 <body>
 <h1>GRECHA на yup_raffle.near</h1>
 
-<!-- Filter by date/time range -->
-<div id="filter-controls" style="margin: 20px; text-align: center;">
+<div id="controls" style="text-align:center; margin: 20px 0;">
     <label>
         С:
-        <input type="datetime-local" id="since-input" value="2025-07-16T02:02" />
+        <input type="datetime-local" id="sinceDate"
+               value="2025-07-16T02:02">
     </label>
-    &nbsp;
+    &nbsp;&nbsp;
     <label>
         По:
-        <input type="datetime-local" id="until-input" value="2025-07-16T20:30" />
+        <input type="datetime-local" id="untilDate"
+               value="2025-07-16T20:30">
     </label>
-    &nbsp;
-    <button id="apply-filter">Применить</button>
+    &nbsp;&nbsp;
+    <button id="applyBtn">Применить</button>
 </div>
 
 <div id="leaderboard">
@@ -102,31 +109,33 @@
 </div>
 
 <script>
-    const API_PATH     = '/api/grecha';
-    const WALLET_ID    = 'yup_raffle.near';
-    const SYMBOL       = 'GRECHA';
-    const BATCH        = 200;
-    const MIN_INTERVAL = 0.03 * 60 * 1000;  // 2 sec
+    const API_PATH = '/api/grecha';
+    const WALLET_ID = 'yup_raffle.near';
+    const COINS    = [
+        { symbol: 'GRECHA', coeff: 0.001 },
+    ];
+    const BATCH = 200;
+    const MIN_INTERVAL = 0.05 * 60 * 1000;  // 3sec
 
     let lastFetchTime = 0;
+    let lastSorted = [];
 
-    function getFilterRange() {
-        const sinceStr = document.getElementById('since-input').value;
-        const untilStr = document.getElementById('until-input').value;
-        return {
-            sinceStr,
-            untilStr,
-            sinceMs: new Date(sinceStr).getTime(),
-            untilMs: new Date(untilStr).getTime()
-        };
+    function getTimeRange() {
+        const sinceDate = document.getElementById('sinceDate').value;
+        const untilDate = document.getElementById('untilDate').value;
+        const sinceMs  = new Date(sinceDate).getTime();
+        const untilMs  = new Date(untilDate).getTime();
+        return { sinceDate, untilDate, sinceMs, untilMs };
     }
 
-    async function fetchAll() {
-        let all = [];
+    // Takes all the translation stacks by symbol.
+    async function fetchAllFor(symbol) {
+        const all = [];
         for (let skip = 0; ; skip += BATCH) {
             const url = `${API_PATH}`
                 + `?wallet_id=${encodeURIComponent(WALLET_ID)}`
-                + `&symbol=${encodeURIComponent(SYMBOL)}`
+                + `&symbol=${encodeURIComponent(symbol)}`
+                + `&direction=in`
                 + `&limit=${BATCH}`
                 + `&skip=${skip}`;
             const resp = await fetch(url);
@@ -139,70 +148,63 @@
         return all;
     }
 
-    async function renderBoard() {
+    // Collects, filters, groups and returns a sorted array {wallet, total}
+    async function fetchData() {
         const now = Date.now();
-        if (now - lastFetchTime < MIN_INTERVAL) return;
+        if (now - lastFetchTime < MIN_INTERVAL) {
+            return lastSorted;
+        }
         lastFetchTime = now;
 
-        const { sinceStr, untilStr, sinceMs, untilMs } = getFilterRange();
+        const { sinceDate, untilDate, sinceMs, untilMs } = getTimeRange();
+        const globalSums = {};
+
+        for (const { symbol, coeff } of COINS) {
+            const data = await fetchAllFor(symbol);
+            data
+                .filter(tx => {
+                    const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                    return txMs >= sinceMs && txMs <= untilMs;
+                })
+                .forEach(tx => {
+                    const val = parseFloat(tx.amount) * coeff;
+                    globalSums[tx.from] = (globalSums[tx.from] || 0) + val;
+                });
+        }
+
+        const sorted = Object.entries(globalSums)
+            .map(([wallet, total]) => ({ wallet, total }))
+            .sort((a, b) => b.total - a.total);
+
+        lastSorted = sorted;
+        return sorted;
+    }
+
+    // Renders the results
+    async function renderBoard() {
         const container = document.getElementById('items');
         container.innerHTML = '';
-
         try {
-            let data = await fetchAll();
-            // Filtering by selected range
-            data = data.filter(tx => {
-                const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                return txMs >= sinceMs && txMs <= untilMs;
-            });
-
-            // Collection of statistics: amount and date of first shipment
-            const stats = {};
-            data.forEach(tx => {
-                const wallet = tx.from;
-                const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                const amount = parseFloat(tx.amount) / 1000 || 0;
-
-                if (!stats[wallet]) {
-                    stats[wallet] = { total: 0, firstMs: txMs };
-                }
-                stats[wallet].total += amount;
-                if (txMs < stats[wallet].firstMs) {
-                    stats[wallet].firstMs = txMs;
-                }
-            });
-
-            // Convert to an array and sort by the first date (ascending)
-            const sorted = Object.entries(stats)
-                .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
-                .sort((a, b) => a.firstMs - b.firstMs);
-
-            // If there is no data - show message
-            if (sorted.length === 0) {
-                container.innerHTML = `
-                        <div class="error">
-                            Нет переводов в период<br>
-                            ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
-                        </div>`;
+            const sorted = await fetchData();
+            if (!sorted.length) {
+                container.innerHTML = `<div class="error">
+            Нет переводов в период<br>
+            ${SINCE_DATETIME.replace('T',' ')} — ${UNTIL_DATETIME.replace('T',' ')}
+          </div>`;
                 return;
             }
-
-            // Line rendering
             sorted.forEach((item, i) => {
-                const date = new Date(item.firstMs);
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
-                        <div class="col-1">${i + 1}</div>
-                        <div class="col-2">
-                          ${item.wallet}
-                        </div>
-                        <div class="col-3">
-                          ${item.total.toLocaleString(undefined, {
-                    minimumFractionDigits: 3,
-                    maximumFractionDigits: 3
+            <div class="col-1">${i+1}</div>
+            <div class="col-2">${item.wallet}</div>
+            <div class="col-3">
+              ${item.total.toLocaleString(undefined,{
+                    minimumFractionDigits:0,
+                    maximumFractionDigits:0
                 })}
-                        </div>`;
+            </div>`;
                 container.appendChild(row);
             });
         } catch (err) {
@@ -240,9 +242,13 @@
         .getElementById('downloadCsv')
         .addEventListener('click', downloadCsv);
 
-    document.getElementById('apply-filter')
+    document.getElementById('applyBtn')
         .addEventListener('click', renderBoard);
-    window.addEventListener('DOMContentLoaded', renderBoard);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        // Initial rendering
+        renderBoard();
+    });
 </script>
 </body>
 </html>

@@ -89,6 +89,8 @@
         <div class="col-3">Сумма</div>
     </div>
     <div id="items"></div>
+
+    <button id="downloadCsv">Скачать CSV</button>
 </div>
 
 <script>
@@ -200,6 +202,35 @@
             console.error(err);
         }
     }
+
+    // Generates a CSV and initiates its download
+    async function downloadCsv() {
+        try {
+            const sorted = lastSorted.length ? lastSorted : await fetchData();
+            let csv = '#,Wallet,Sum\n';
+            csv += sorted
+                .map((item, idx) =>
+                    `${idx+1},${item.wallet},${item.total.toFixed(0)}`
+                )
+                .join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'GRECHA_to_yup_raffle.near.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert('Ошибка при создании CSV: ' + err.message);
+            console.error(err);
+        }
+    }
+
+    document
+        .getElementById('downloadCsv')
+        .addEventListener('click', downloadCsv);
 
     document.getElementById('apply-filter')
         .addEventListener('click', renderBoard);

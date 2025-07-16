@@ -157,7 +157,7 @@
         lastFetchTime = now;
 
         const { sinceDate, untilDate, sinceMs, untilMs } = getTimeRange();
-        const globalSums = {};
+        const transactions = [];
 
         for (const { symbol, coeff } of COINS) {
             const data = await fetchAllFor(symbol);
@@ -167,14 +167,16 @@
                     return txMs >= sinceMs && txMs <= untilMs;
                 })
                 .forEach(tx => {
-                    const val = parseFloat(tx.amount) * coeff;
-                    globalSums[tx.from] = (globalSums[tx.from] || 0) + val;
+                    transactions.push({
+                        wallet: tx.from,
+                        total: parseFloat(tx.amount) * coeff,
+                        timestamp: Number(tx.timestamp_nanosec) / 1e6
+                    });
                 });
         }
 
-        const sorted = Object.entries(globalSums)
-            .map(([wallet, total]) => ({ wallet, total }))
-            .sort((a, b) => b.total - a.total);
+        // Sorted by time: old first
+        const sorted = transactions.sort((a, b) => a.timestamp - b.timestamp);
 
         lastSorted = sorted;
         return sorted;

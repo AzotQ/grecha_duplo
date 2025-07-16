@@ -65,7 +65,7 @@
     </style>
 </head>
 <body>
-<h1>GRECHA на feed_yupiks.near</h1>
+<h1>GRECHA на yup_raffle.near</h1>
 
 <!-- Filter by date/time range -->
 <div id="filter-controls" style="margin: 20px; text-align: center;">
@@ -93,10 +93,10 @@
 
 <script>
     const API_PATH     = '/api/grecha';
-    const WALLET_ID    = 'feed_yupiks.near';
+    const WALLET_ID    = 'yup_raffle.near';
     const SYMBOL       = 'GRECHA';
     const BATCH        = 200;
-    const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
+    const MIN_INTERVAL = 0.03 * 60 * 1000;  // 2 sec
 
     let lastFetchTime = 0;
 

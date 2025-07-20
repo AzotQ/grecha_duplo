@@ -99,12 +99,13 @@
 <h1>ГРЕЧЕМОЛКА 2.0 - leaderboard</h1>
 
 <section class="day-select">
-    <button id="day1">День 1</button>
-    <button id="day2">День 2</button>
-    <button id="day3">День 3</button>
-    <button id="day4">День 4</button>
-    <button id="day5">День 5</button>
-    <button id="day6">День 6</button>
+    <button id="day1">Day 1</button>
+    <button id="day2">Day 2</button>
+    <button id="day3">Day 3</button>
+    <button id="day4">Day 4</button>
+    <button id="day5">Day 5</button>
+    <button id="day6">Day 6</button>
+    <button id="dayD">Reset</button>
 </section>
 
 <div id="leaderboard">
@@ -273,6 +274,9 @@
     });
     document.getElementById('day6').addEventListener('click', () => {
         setDateRange('2025-06-28T00:00', '2025-06-28T22:00');
+    });
+    document.getElementById('dayD').addEventListener('click', () => {
+        setDateRange('2025-06-23T12:00', '2025-06-29T22:00');
     });
 
     document

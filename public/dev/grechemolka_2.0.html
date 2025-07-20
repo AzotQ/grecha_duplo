@@ -76,48 +76,10 @@
             text-align: center;
             padding:10px;
         }
-
-        section.day-select {
-            display: flex;
-            align-items: center;
-            margin: 0 5px 5px;
-            justify-content: space-between;
-        }
-        section.day-select button {
-            display: flex;
-            align-items: center;
-            background: #bb37fc;
-            color: ivory;
-            text-shadow: 4px 4px 5px #9541AC;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        section.day-select button#dayD {
-            background: #651c8a;
-        }
-
-        @media (max-width: 480px) {
-            section.day-select button {
-                padding: 4px 6px;
-                height: -webkit-fill-available;
-            }
-        }
     </style>
 </head>
 <body>
 <h1>ГРЕЧЕМОЛКА 2.0 - leaderboard</h1>
-
-<section class="day-select">
-    <button id="day1">Day 1</button>
-    <button id="day2">Day 2</button>
-    <button id="day3">Day 3</button>
-    <button id="day4">Day 4</button>
-    <button id="day5">Day 5</button>
-    <button id="day6">Day 6</button>
-    <button id="day7">Day 7</button>
-    <button id="dayD">Reset</button>
-</section>
 
 <div id="leaderboard">
     <div class="leaderboard-header">
@@ -137,10 +99,10 @@
         { symbol: 'YUM', coeff: 0.0000005 },
         { symbol: 'GRECHA', coeff: 0.001 },
     ];
-    let SINCE_DATETIME = '2025-07-21T00:00';
-    let UNTIL_DATETIME = '2025-07-27T22:00';
-    let SINCE_MS     = new Date(SINCE_DATETIME).getTime();
-    let UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
+    const SINCE_DATETIME = '2025-07-21T00:00';
+    const UNTIL_DATETIME = '2025-07-27T22:00';
+    const SINCE_MS     = new Date(SINCE_DATETIME).getTime();
+    const UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
     const BATCH = 200;
     const MIN_INTERVAL = 1 * 60 * 1000;  // 1 minute
 
@@ -255,43 +217,6 @@
             console.error(err);
         }
     }
-
-    // Function for updating dates and redrawing the table
-    function setDateRange(since, until) {
-        SINCE_DATETIME = since;
-        UNTIL_DATETIME = until;
-        SINCE_MS = new Date(SINCE_DATETIME).getTime();
-        UNTIL_MS = new Date(UNTIL_DATETIME).getTime();
-        // Reset the cache to force a new request
-        lastFetchTime = 0;
-        renderBoard();
-    }
-
-    // Add handlers for buttons
-    document.getElementById('day1').addEventListener('click', () => {
-        setDateRange('2025-07-21T00:00', '2025-07-21T23:59');
-    });
-    document.getElementById('day2').addEventListener('click', () => {
-        setDateRange('2025-07-22T00:00', '2025-07-22T23:59');
-    });
-    document.getElementById('day3').addEventListener('click', () => {
-        setDateRange('2025-07-23T00:00', '2025-07-23T23:59');
-    });
-    document.getElementById('day4').addEventListener('click', () => {
-        setDateRange('2025-07-24T00:00', '2025-07-24T23:59');
-    });
-    document.getElementById('day5').addEventListener('click', () => {
-        setDateRange('2025-07-25T00:00', '2025-07-25T23:59');
-    });
-    document.getElementById('day6').addEventListener('click', () => {
-        setDateRange('2025-07-26T00:00', '2025-07-26T23:59');
-    });
-    document.getElementById('day7').addEventListener('click', () => {
-        setDateRange('2025-07-27T00:00', '2025-07-27T22:00');
-    });
-    document.getElementById('dayD').addEventListener('click', () => {
-        setDateRange('2025-07-21T00:00', '2025-07-27T22:00');
-    });
 
     document
         .getElementById('downloadCsv')

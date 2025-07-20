@@ -125,10 +125,10 @@
         { symbol: 'YUM', coeff: 0.0000005 },
         { symbol: 'GRECHA', coeff: 0.001 },
     ];
-    const SINCE_DATETIME = '2025-06-23T12:00';
-    const UNTIL_DATETIME = '2025-06-29T22:00';
-    const SINCE_MS     = new Date(SINCE_DATETIME).getTime();
-    const UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
+    let SINCE_DATETIME = '2025-06-23T12:00';
+    let UNTIL_DATETIME = '2025-06-29T22:00';
+    let SINCE_MS     = new Date(SINCE_DATETIME).getTime();
+    let UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
     const BATCH = 200;
     const MIN_INTERVAL = 1 * 60 * 1000;  // 1 minute
 
@@ -243,6 +243,37 @@
             console.error(err);
         }
     }
+
+    // Function for updating dates and redrawing the table
+    function setDateRange(since, until) {
+        SINCE_DATETIME = since;
+        UNTIL_DATETIME = until;
+        SINCE_MS = new Date(SINCE_DATETIME).getTime();
+        UNTIL_MS = new Date(UNTIL_DATETIME).getTime();
+        // Reset the cache to force a new request
+        lastFetchTime = 0;
+        renderBoard();
+    }
+
+    // Add handlers for buttons
+    document.getElementById('day1').addEventListener('click', () => {
+        setDateRange('2025-06-23T12:00', '2025-06-23T22:00');
+    });
+    document.getElementById('day2').addEventListener('click', () => {
+        setDateRange('2025-06-24T00:00', '2025-06-24T22:00');
+    });
+    document.getElementById('day3').addEventListener('click', () => {
+        setDateRange('2025-06-25T00:00', '2025-06-25T22:00');
+    });
+    document.getElementById('day4').addEventListener('click', () => {
+        setDateRange('2025-06-26T00:00', '2025-06-26T22:00');
+    });
+    document.getElementById('day5').addEventListener('click', () => {
+        setDateRange('2025-06-27T00:00', '2025-06-27T22:00');
+    });
+    document.getElementById('day6').addEventListener('click', () => {
+        setDateRange('2025-06-28T00:00', '2025-06-28T22:00');
+    });
 
     document
         .getElementById('downloadCsv')

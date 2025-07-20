@@ -97,6 +97,11 @@
             background: #651c8a;
         }
 
+        section.day-select button.active-day {
+            background-color: #6a27c8;
+            box-shadow: 0 0 8px 2px #bb37fc;
+        }
+
         @media (max-width: 480px) {
             section.day-select button {
                 padding: 4px 6px;
@@ -266,27 +271,40 @@
         renderBoard();
     }
 
+    function setActiveButton(activeBtn) {
+        const buttons = document.querySelectorAll('section.day-select button');
+        buttons.forEach(btn => btn.classList.remove('active-day'));
+        activeBtn.classList.add('active-day');
+    }
+
     // Add handlers for buttons
-    document.getElementById('day1').addEventListener('click', () => {
+    document.getElementById('day1').addEventListener('click', (e) => {
         setDateRange('2025-06-23T12:00', '2025-06-23T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('day2').addEventListener('click', () => {
+    document.getElementById('day2').addEventListener('click', (e) => {
         setDateRange('2025-06-24T00:00', '2025-06-24T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('day3').addEventListener('click', () => {
+    document.getElementById('day3').addEventListener('click', (e) => {
         setDateRange('2025-06-25T00:00', '2025-06-25T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('day4').addEventListener('click', () => {
+    document.getElementById('day4').addEventListener('click', (e) => {
         setDateRange('2025-06-26T00:00', '2025-06-26T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('day5').addEventListener('click', () => {
+    document.getElementById('day5').addEventListener('click', (e) => {
         setDateRange('2025-06-27T00:00', '2025-06-27T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('day6').addEventListener('click', () => {
+    document.getElementById('day6').addEventListener('click', (e) => {
         setDateRange('2025-06-28T00:00', '2025-06-28T22:00');
+        setActiveButton(e.currentTarget);
     });
-    document.getElementById('dayD').addEventListener('click', () => {
+    document.getElementById('dayD').addEventListener('click', (e) => {
         setDateRange('2025-06-23T12:00', '2025-06-29T22:00');
+        setActiveButton(e.currentTarget);
     });
 
     document

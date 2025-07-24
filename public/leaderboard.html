@@ -212,6 +212,8 @@
     let lastFetchTime = 0;
     let lastSorted = [];
 
+    let isLoading = false;
+
     // Takes all the translation stacks by symbol.
     async function fetchAllFor(symbol) {
         const all = [];
@@ -234,33 +236,49 @@
 
     // Collects, filters, groups and returns a sorted array {wallet, total}
     async function fetchData() {
+        if (isLoading) {
+            // If the download is already in progress, do not start again
+            return lastSorted;
+        }
+
+        isLoading = true;
+        disableButtons(true);
+
         const now = Date.now();
         if (now - lastFetchTime < MIN_INTERVAL) {
+            isLoading = false;
+            disableButtons(false);
+
             // If it is too frequent, we immediately revert to the past data
             return lastSorted;
         }
         lastFetchTime = now;
 
-        const globalSums = {};
-        for (const { symbol, coeff } of COINS) {
-            const data = await fetchAllFor(symbol);
-            data
-                .filter(tx => {
-                    const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                    return txMs >= SINCE_MS && txMs <= UNTIL_MS;
-                })
-                .forEach(tx => {
-                    const val = parseFloat(tx.amount) * coeff;
-                    globalSums[tx.from] = (globalSums[tx.from] || 0) + val;
-                });
+        try {
+            const globalSums = {};
+            for (const { symbol, coeff } of COINS) {
+                const data = await fetchAllFor(symbol);
+                data
+                    .filter(tx => {
+                        const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                        return txMs >= SINCE_MS && txMs <= UNTIL_MS;
+                    })
+                    .forEach(tx => {
+                        const val = parseFloat(tx.amount) * coeff;
+                        globalSums[tx.from] = (globalSums[tx.from] || 0) + val;
+                    });
+            }
+
+            const sorted = Object.entries(globalSums)
+                .map(([wallet, total]) => ({ wallet, total }))
+                .sort((a, b) => b.total - a.total);
+
+            lastSorted = sorted;
+            return sorted;
+        } finally {
+            isLoading = false;
+            disableButtons(false);
         }
-
-        const sorted = Object.entries(globalSums)
-            .map(([wallet, total]) => ({ wallet, total }))
-            .sort((a, b) => b.total - a.total);
-
-        lastSorted = sorted;
-        return sorted;
     }
 
     // Renders the results
@@ -294,6 +312,19 @@
             container.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
             console.error(err);
         }
+    }
+
+    // Function to lock/unlock day buttons
+    function disableButtons(disable) {
+        const buttons = document.querySelectorAll('section.day-select button');
+        buttons.forEach(btn => btn.disabled = disable);
+    }
+
+    // Button handlers with isLoading flag check
+    function onDayButtonClick(since, until, e) {
+        if (isLoading) return;  // ignore clicks if the download
+        setDateRange(since, until);
+        setActiveButton(e.currentTarget);
     }
 
     // Generates a CSV and initiates its download

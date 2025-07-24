@@ -237,7 +237,7 @@
     // Collects, filters, groups and returns a sorted array {wallet, total}
     async function fetchData() {
         if (isLoading) {
-            // Если уже идёт загрузка, не запускаем ещё раз
+            // If the download is already in progress, do not start again
             return lastSorted;
         }
 
@@ -314,15 +314,15 @@
         }
     }
 
-    // Функция для блокировки/разблокировки кнопок дней
+    // Function to lock/unlock day buttons
     function disableButtons(disable) {
         const buttons = document.querySelectorAll('section.day-select button');
         buttons.forEach(btn => btn.disabled = disable);
     }
 
-    // Обработчики кнопок с проверкой флага isLoading
+    // Button handlers with isLoading flag check
     function onDayButtonClick(since, until, e) {
-        if (isLoading) return;  // игнорируем клики, если загрузка
+        if (isLoading) return;  // ignore clicks if the download
         setDateRange(since, until);
         setActiveButton(e.currentTarget);
     }

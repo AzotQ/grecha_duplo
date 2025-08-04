@@ -85,13 +85,13 @@
     <label>
         С:
         <input type="datetime-local" id="sinceDate"
-               value="2025-07-10T22:41">
+               value="2025-08-02T12:00">
     </label>
     &nbsp;&nbsp;
     <label>
         По:
         <input type="datetime-local" id="untilDate"
-               value="2025-07-17T18:45">
+               value="2025-08-14T17:00">
     </label>
     &nbsp;&nbsp;
     <button id="applyBtn">Применить</button>
@@ -105,7 +105,7 @@
     </div>
     <div id="items"></div>
 
-    <button id="downloadCsv">Скачать CSV</button>
+    <button id="downloadCsv">Export</button>
 </div>
 
 <script>
@@ -213,34 +213,69 @@
         }
     }
 
-    // Generates a CSV and initiates its download
-    async function downloadCsv() {
+    // Generates a Exel and initiates its download
+    async function downloadExcel() {
         try {
             const sorted = lastSorted.length ? lastSorted : await fetchData();
-            let csv = '#,Wallet,Sum\n';
-            csv += sorted
-                .map((item, idx) =>
-                    `${idx+1},${item.wallet},${item.total.toFixed(0)}`
-                )
-                .join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'JHOLUDI_to_darai_fane.near.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+
+            // Data for SheetJS, first line - headers
+            const ws_data = [
+                ['#', 'Wallet', 'Sum'],
+                ...sorted.map((item, idx) => [idx + 1, item.wallet, +item.total]) // '+item.total' — число!
+            ];
+
+            // Creating a worksheet
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // Set the numeric format for the whole “Sum” column
+            const sumCol = 2; // Sum" column index (starting from zero)
+
+            // Starting from the second line (index 2, since the first line is the headings)
+            for (let row = 2; row <= sorted.length + 1; row++) {
+                const cellAddress = XLSX.utils.encode_cell({ c: sumCol, r: row - 1 });
+                if (ws[cellAddress]) {
+                    ws[cellAddress].t = 'n';          // Type: number
+                    ws[cellAddress].z = '#,##0';      // Format: thousands separator, no decimal places
+                }
+            }
+
+            // Create a book and save the file
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "JHOLUDI");
+
+            XLSX.writeFile(wb, 'JHOLUDI_to_darai_fane.near.xlsx');
         } catch (err) {
-            alert('Ошибка при создании CSV: ' + err.message);
+            alert('Ошибка при создании Excel: ' + err.message);
             console.error(err);
         }
     }
+    // async function downloadCsv() {
+    //     try {
+    //         const sorted = lastSorted.length ? lastSorted : await fetchData();
+    //         let csv = '#,Wallet,Sum\n';
+    //         csv += sorted
+    //             .map((item, idx) =>
+    //                 `${idx+1},${item.wallet},${item.total.toFixed(0)}`
+    //             )
+    //             .join('\n');
+    //         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    //         const url = URL.createObjectURL(blob);
+    //         const a = document.createElement('a');
+    //         a.href = url;
+    //         a.download = 'JHOLUDI_to_darai_fane.near.csv';
+    //         document.body.appendChild(a);
+    //         a.click();
+    //         document.body.removeChild(a);
+    //         URL.revokeObjectURL(url);
+    //     } catch (err) {
+    //         alert('Ошибка при создании CSV: ' + err.message);
+    //         console.error(err);
+    //     }
+    // }
 
     document
         .getElementById('downloadCsv')
-        .addEventListener('click', downloadCsv);
+        .addEventListener('click', downloadExcel);
 
     document.getElementById('applyBtn')
         .addEventListener('click', renderBoard);

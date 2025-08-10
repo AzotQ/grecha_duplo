@@ -1,7 +1,7 @@
 // api/grecha.js
 import fetch from 'node-fetch';
 
-const BASE_URL = 'https://dialog-tbot.com/history/ft-transfers/';
+const BASE_URL = 'https://api.sendler.xyz/history/ft-transfers/';
 const DEFAULT_LIMIT = 100;
 const DEFAULT_SKIP  = 0;
 

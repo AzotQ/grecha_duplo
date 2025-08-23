@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
 
     <style>
         body {
@@ -204,8 +205,9 @@
     ];
     let SINCE_DATETIME = '2025-08-23T00:00';
     let UNTIL_DATETIME = '2025-08-29T22:00';
-    let SINCE_MS     = new Date(SINCE_DATETIME).getTime();
-    let UNTIL_MS     = new Date(UNTIL_DATETIME).getTime();
+    // Parses the ISO string as time in the +03:00 zone
+    let SINCE_MS     = Date.parse(`${SINCE_DATETIME}+03:00`);
+    let UNTIL_MS     = Date.parse(`${UNTIL_DATETIME}+03:00`);
     const BATCH = 200;
     const MIN_INTERVAL = 1 * 60 * 1000;  // 1 minute
 
@@ -330,24 +332,29 @@
     // Generates a CSV and initiates its download
     async function downloadCsv() {
         try {
+            // Getting already sorted data
             const sorted = lastSorted.length ? lastSorted : await fetchData();
-            let csv = '#,Wallet,Points\n';
-            csv += sorted
-                .map((item, idx) =>
-                    `${idx+1},${item.wallet},${item.total.toFixed(3)}`
-                )
-                .join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'leaderboard.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+
+            // Generating an array of rows for Excel
+            // The first line is the headings
+            const data = [
+                ['#', 'Wallet', 'Points'],
+                ...sorted.map((item, idx) => [
+                    idx + 1,
+                    item.wallet,
+                    Number(item.total.toFixed(3))
+                ])
+            ];
+
+            // Creating a sheet and a book
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Leaderboard');
+
+            // Download the .xlsx file
+            XLSX.writeFile(wb, 'grecha-duplo.xlsx');
         } catch (err) {
-            alert('Ошибка при создании CSV: ' + err.message);
+            alert('Ошибка при создании Excel файла: ' + err.message);
             console.error(err);
         }
     }

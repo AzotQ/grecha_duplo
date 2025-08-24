@@ -363,8 +363,9 @@
     function setDateRange(since, until) {
         SINCE_DATETIME = since;
         UNTIL_DATETIME = until;
-        SINCE_MS = new Date(SINCE_DATETIME).getTime();
-        UNTIL_MS = new Date(UNTIL_DATETIME).getTime();
+        // Parses the ISO string as time in the +03:00 zone
+        SINCE_MS     = Date.parse(`${SINCE_DATETIME}+03:00`);
+        UNTIL_MS     = Date.parse(`${UNTIL_DATETIME}+03:00`);
         // Reset the cache to force a new request
         lastFetchTime = 0;
         renderBoard();

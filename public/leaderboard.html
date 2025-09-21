@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>ГРЕЧЕМОЛКА 3</title>
+    <title>ГРЕЧЕМОЛКА 4</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -166,7 +166,7 @@
     </style>
 </head>
 <body>
-<h1>ГРЕЧЕМОЛКА 3 - leaderboard</h1>
+<h1>ГРЕЧЕМОЛКА 4 - leaderboard</h1>
 <h4 class="subtitle"><div class="copy-address">grecha_duplo.near</div></h4>
 
 <!-- Custom Alert Container -->
@@ -203,8 +203,8 @@
         { symbol: 'YUM', coeff: 0.0000005 },
         { symbol: 'GRECHA', coeff: 0.001 },
     ];
-    let SINCE_DATETIME = '2025-08-23T00:00:00';
-    let UNTIL_DATETIME = '2025-08-29T22:00:00';
+    let SINCE_DATETIME = '2025-09-22T00:00:00';
+    let UNTIL_DATETIME = '2025-09-28T22:00:00';
     // Parses the ISO string as time in the +03:00 zone
     let SINCE_MS     = Date.parse(`${SINCE_DATETIME}+03:00`);
     let UNTIL_MS     = Date.parse(`${UNTIL_DATETIME}+03:00`);
@@ -379,35 +379,35 @@
 
     // Add handlers for buttons
     document.getElementById('day1').addEventListener('click', (e) => {
-        setDateRange('2025-08-23T00:00:00', '2025-08-23T21:59:00');
+        setDateRange('2025-09-22T00:00:00', '2025-09-22T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day2').addEventListener('click', (e) => {
-        setDateRange('2025-08-23T21:59:01', '2025-08-24T21:59:59');
+        setDateRange('2025-09-22T22:00:01', '2025-09-23T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day3').addEventListener('click', (e) => {
-        setDateRange('2025-08-24T22:00:00', '2025-08-25T21:59:59');
+        setDateRange('2025-09-23T22:00:01', '2025-09-24T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day4').addEventListener('click', (e) => {
-        setDateRange('2025-08-25T22:00:00', '2025-08-26T21:59:59');
+        setDateRange('2025-09-24T22:00:01', '2025-09-25T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day5').addEventListener('click', (e) => {
-        setDateRange('2025-08-26T22:00:00', '2025-08-27T21:59:59');
+        setDateRange('2025-09-25T22:00:01', '2025-09-26T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day6').addEventListener('click', (e) => {
-        setDateRange('2025-08-27T22:00:00', '2025-08-28T21:59:59');
+        setDateRange('2025-09-26T22:00:01', '2025-09-27T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('day7').addEventListener('click', (e) => {
-        setDateRange('2025-08-28T22:00:00', '2025-08-29T22:00:00');
+        setDateRange('2025-09-27T22:00:01', '2025-09-28T22:00:00');
         setActiveButton(e.currentTarget);
     });
     document.getElementById('dayD').addEventListener('click', (e) => {
-        setDateRange('2025-08-23T00:00:00', '2025-08-29T22:00:00');
+        setDateRange('2025-09-22T00:00:00', '2025-09-28T22:00:00');
         setActiveButton(e.currentTarget);
     });
 
